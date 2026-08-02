@@ -1,0 +1,41 @@
+name: Build images.json
+
+on:
+  push:
+    paths:
+      - '*.jpg'
+      - '*.jpeg'
+      - '*.png'
+      - '*.webp'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate images.json
+        run: |
+          echo "[" > images.json
+          first=true
+          for f in *.jpg *.jpeg *.png *.webp; do
+            [ -f "$f" ] || continue
+            if [ "$first" = true ]; then
+              first=false
+            else
+              echo "," >> images.json
+            fi
+            echo "  {" >> images.json
+            echo "    \"title\": \"معلومة طبية\"," >> images.json
+            echo "    \"image\": \"https://raw.githubusercontent.com/nano-Nawfal/medical-images/main/$f\"" >> images.json
+            echo "  }" >> images.json
+          done
+          echo "]" >> images.json
+
+      - name: Commit images.json
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update images.json automatically"
