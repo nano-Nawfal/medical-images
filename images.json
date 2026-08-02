@@ -1,52 +1,50 @@
 name: Build images.json
 
 on:
-  push:
-    paths:
-      - "*.jpg"
-      - "*.jpeg"
-      - "*.png"
-      - "*.webp"
+push:
+paths:
+- ".jpg"
+- ".jpeg"
+- ".png"
+- ".webp"
 
 permissions:
-  contents: write
+contents: write
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+build:
+runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+steps:  
+  - uses: actions/checkout@v4  
 
-      - name: Generate images.json
-        shell: bash
-        run: |
-          echo "[" > images.json
+  - name: Generate images.json  
+    run: |  
+      echo "[" > images.json  
+      first=true  
+      for f in *.{jpg,jpeg,png,webp}; do  
+        [ -f "$f" ] || continue  
+        if [ "$first" = true ]; then  
+          first=false  
+        else  
+          echo "," >> images.json  
+        fi  
 
-          first=true
+        name=$(basename "$f")  
 
-          for f in *.jpg *.jpeg *.png *.webp; do
-            [ -f "$f" ] || continue
+        cat >> images.json <<EOF
 
-            if [ "$first" = true ]; then
-              first=false
-            else
-              echo "," >> images.json
-            fi
+{
+"title": "$name",
+"description": "",
+"category": "",
+"image": "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$name"
+}
+EOF
+done
+echo "]" >> images.json
 
-            name=$(basename "$f")
-
-            printf '{\n  "title":"%s",\n  "description":"",\n  "category":"",\n  "image":"https://%s.github.io/%s/%s"\n}' \
-            "$name" \
-            "${{ github.repository_owner }}" \
-            "${{ github.event.repository.name }}" \
-            "$name" >> images.json
-
-          done
-
-          echo "]" >> images.json
-
-      - name: Commit images.json
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Update images.json automatically"
+- name: Commit images.json  
+    uses: stefanzweifel/git-auto-commit-action@v5  
+    with:  
+      commit_message: "Update images.json automatically"
