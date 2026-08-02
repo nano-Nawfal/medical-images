@@ -3,10 +3,10 @@ name: Build images.json
 on:
   push:
     paths:
-      - '*.jpg'
-      - '*.jpeg'
-      - '*.png'
-      - '*.webp'
+      - '**/*.jpg'
+      - '**/*.jpeg'
+      - '**/*.png'
+      - '**/*.webp'
 
 permissions:
   contents: write
@@ -21,16 +21,32 @@ jobs:
         run: |
           echo "[" > images.json
           first=true
-          for f in *.jpg *.jpeg *.png *.webp; do
-            [ -f "$f" ] || continue
+          # البحث عن الصور في المجلد الرئيسي والمجلدات الفرعية
+          find . -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" -o -name "*.webp" \) | while read -r filepath; do
+            # إزالة علامة النقطة والشرطة المائلة من بداية المسار (مثال: ./القلب/image1.jpg تصبح القلب/image1.jpg)
+            cleanpath="${filepath#./}"
+            
+            # استخراج اسم المجلد كـ تصنيف (Category)
+            category=$(dirname "$cleanpath")
+            if [ "$category" = "." ]; then
+              category="معلومات عامة"
+            fi
+            
+            # استخراج اسم الملف لجعل العنوان افتراضياً منه (بدون اللاحقة)
+            filename=$(basename "$cleanpath")
+            title="${filename%.*}"
+            
             if [ "$first" = true ]; then
               first=false
             else
               echo "," >> images.json
             fi
+            
             echo "  {" >> images.json
-            echo "    \"title\": \"معلومة طبية\"," >> images.json
-            echo "    \"image\": \"https://raw.githubusercontent.com/nano-Nawfal/medical-images/main/$f\"" >> images.json
+            echo "    \"title\": \"$title\"," >> images.json
+            echo "    \"category\": \"$category\"," >> images.json
+            echo "    \"description\": \"معلومات طبية موثوقة ومفيدة حول $category.\"," >> images.json
+            echo "    \"image\": \"https://raw.githubusercontent.com/nano-Nawfal/medical-images/main/$cleanpath\"" >> images.json
             echo "  }" >> images.json
           done
           echo "]" >> images.json
@@ -38,4 +54,4 @@ jobs:
       - name: Commit images.json
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update images.json automatically"
+          commit_message: "Update images.json with categories automatically"
